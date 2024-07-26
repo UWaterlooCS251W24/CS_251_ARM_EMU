@@ -30,6 +30,14 @@ class Instr:
     CB_TYPE = [ CBZ, CBNZ ]
 
     def extract(instr_str):
+        instr_str = instr_str.strip()
+        index = instr_str.find(';')
+        if index != -1:
+            instr_str = instr_str[:index]
+        index = instr_str.find('@')
+        if index != -1:
+            instr_str = instr_str[:index]
+
         instr_str = instr_str.upper()
 
         instr = instr_str.split(' ')[0]
@@ -39,6 +47,12 @@ class Instr:
 
         args = args.replace('[', ' ')
         args = args.replace(']', ' ')
+
+        args = args.replace('\t', ' ')
+        args = args.replace('\v', ' ')
+        args = args.replace('\n', ' ')
+        args = args.replace('\r', ' ')
+        args = args.replace('\f', ' ')
 
         args = args.split(' ')
         args = list(filter(lambda x: x != '', args))
