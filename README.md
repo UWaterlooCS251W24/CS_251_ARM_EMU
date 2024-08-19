@@ -153,15 +153,16 @@ print(cpu1 == cpu2)
 
 ## API Functions
 
-### `__init__(self, id, code, reg_config='', mem_config='', randomize=True)`
+### `__init__(self, id, code, reg_config='', mem_config='', randomize=True, debug=False)`
 
-Instantiates a CPU object. By default, initializes the CPU to random values. This can be overridden to set specific values in registers and data memory.
+Instantiates a CPU object. By default, initializes the CPU to random values. This can be overridden to set specific values in registers and data memory. Debug mode is turned off by default. If enabled, instructions causing errors (improper memory access, potential infinite loop) will be skipped and code will continue executing.
 
 - `id`: Identifier for the CPU object (use for debugging).
 - `code`: Array of strings, each containing a line of ARM source code.
 - `reg_config`: String containing configuration for registers
 - `mem_config`: String containing configuration for data memory
 - `randomize`: Boolean flag used to enable/disable randomizing non-configured CPU values.
+- `debug`: Boolean flag used to enable/disable debug mode.
 
 Example1:
 

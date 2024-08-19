@@ -30,7 +30,7 @@ class Instr:
     CB_TYPE = [ CBZ, CBNZ ]
 
     def extract(instr_str):
-        instr_str = instr_str.strip()
+        orig = instr_str
         index = instr_str.find(';')
         if index != -1:
             instr_str = instr_str[:index]
@@ -38,23 +38,21 @@ class Instr:
         if index != -1:
             instr_str = instr_str[:index]
 
-        instr_str = instr_str.upper()
+        if not instr_str.isupper():
+            print("Error: Instruction must be uppercase: " + orig)
+            instr_str = instr_str.upper()
 
-        instr = instr_str.split(' ')[0]
+        instr = instr_str.split()[0]
         args = instr_str[len(instr):]
 
-        args = args.replace(',', ' ')
+        if instr_str.find(',') != -1:
+            print("Error: No commas allowed in instruction: " + orig)
+            args = args.replace(',', ' ')
 
         args = args.replace('[', ' ')
         args = args.replace(']', ' ')
 
-        args = args.replace('\t', ' ')
-        args = args.replace('\v', ' ')
-        args = args.replace('\n', ' ')
-        args = args.replace('\r', ' ')
-        args = args.replace('\f', ' ')
-
-        args = args.split(' ')
+        args = args.split()
         args = list(filter(lambda x: x != '', args))
 
         return Instr_Info(instr, args)

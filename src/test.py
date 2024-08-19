@@ -2,16 +2,17 @@
 
 from cpu import CPU
 
-code = [
-'\t\tADDI X3, XZR, #5 \t @ this is a comment',
-'     \t CBZ XZR, #4 \t\r\n; this is another comment',
-'ADDI X1, XZR, #5 ;;;; commenting again',
-'ADDI X2, XZR, #10',
-'ADD X3, X1, X2',
-'STUR X3, [XZR, #8]'
-]
+f = open('code/tabEx1.txt', 'r')
+code = []
+for line in f:
+    code.append(line.strip())
+f.close()
 
-cpu1 = CPU('Test', code, '', '')
+reg_config = '''
+
+'''
+
+cpu1 = CPU('Test', code, reg_config, '', True, True)
 
 cpu1.set_print_mode(hex_mode=False)
 

@@ -6,7 +6,10 @@ from instr import Instr
 from validator import ValidateARM
 
 # number of bytes in data memory
-MEMSIZE = 256 
+MEMSIZE = 256
+
+# maximum number of times a CB-type instruction can be executed
+LIMIT = 1000
 
 class CPU:
     def __init__(self, 
@@ -14,7 +17,8 @@ class CPU:
                  code: list[str], 
                  reg_config: str = "", 
                  mem_config: str = "", 
-                 randomize: bool = True
+                 randomize: bool = True,
+                 debug: bool = False
                 ) -> None:
         # Validate Arm Code
         ValidateARM.validate_code(code)
@@ -23,9 +27,11 @@ class CPU:
         self.pc = 0
 
         self.code = code
+        self.debug = debug
 
         self.registers = [0] * 32
         self.data_mem = [0] * MEMSIZE
+        self.count = [0] * len(self.code)
         self.print_mode_hex = True
 
         if randomize: self.randomize_cpu()
@@ -215,7 +221,7 @@ class CPU:
             (Expected i < {len(self.code)}. Recieved i = {i}.)'
             '''
             raise IndexError(error_msg)
-        return self.code[self.pc // 4].upper()
+        return self.code[self.pc // 4]
 
     def get_reg_index(reg: str) -> int:
         reg = reg.upper()
@@ -265,7 +271,11 @@ class CPU:
             Recieved mem_index: [{mem_index}].
             mem_index must be double-word aligned.
             '''
-            raise ValueError(error_msg)
+            if self.debug:
+                print(error_msg)
+                return False
+            else:
+                raise ValueError(error_msg)
 
         if mem_index + 7 >= len(self.data_mem):
             error_msg = f'''
@@ -274,7 +284,12 @@ class CPU:
             Recieved: {mem_index}.
             Maximum Accepted: {len(self.data_mem) - 8}
             '''
-            raise ValueError(error_msg)
+            if self.debug:
+                print(error_msg)
+                return False
+            else:
+                raise ValueError(error_msg)
+        return True
     
     def get_reg_value(self, reg: str) -> int:
         reg_index = CPU.get_reg_index(reg)
@@ -285,7 +300,9 @@ class CPU:
         self.set_register_val(reg_index, value)
     
     def get_double_word(self, mem_index: int) -> int:
-        self.validate_double_word_index(mem_index)
+        if not self.validate_double_word_index(mem_index):
+            print("Skipping instruction.")
+            return -1
         
         res = 0
         for i in range(8):
@@ -294,7 +311,9 @@ class CPU:
         return res
     
     def set_double_word(self, mem_index: int, value: int) -> None:
-        self.validate_double_word_index(mem_index)
+        if not self.validate_double_word_index(mem_index):
+            print("Skipping instruction.")
+            return
         for i in range(7, -1, -1):
             temp = value & 0xFF
             value >>= 8
@@ -344,6 +363,8 @@ class CPU:
         
         # Seperate Instruction and Instruction Args
         instr, args = instr_values.instr, instr_values.args
+
+        self.count[self.pc // 4] += 1
 
         def run_r_type() -> None:
             try:
@@ -396,11 +417,17 @@ class CPU:
             #Enforcing IMM bounds
             if not (-256 <= IMM <= 255):
                 error_msg = f'''
-                Immediete Value invalid. 
+                Immediate Value invalid. 
                 Recieved IMM = {IMM}.
                 Expected -256 <= IMM <= 255.
                 '''
-                raise ValueError(error_msg)
+                if self.debug:
+                    print(error_msg)
+                    print("Skipping instruction.")
+                    self.pc += 4
+                    return
+                else:
+                    raise ValueError(error_msg)
             
             mem_index = self.registers[XB] + IMM
 
@@ -411,11 +438,18 @@ class CPU:
                 Recieved access index = {mem_index}.
                 Access Index must be double-word aligned.
                 '''
-                raise ValueError(error_msg)
+                if self.debug:
+                    print(error_msg)
+                    print("Skipping instruction.")
+                    self.pc += 4
+                    return
+                else:
+                    raise ValueError(error_msg)
 
             if instr == Instr.LDUR:
                 mem_value = self.get_double_word(mem_index)
-                self.set_register_val(XA, mem_value)
+                if mem_value != -1:
+                    self.set_register_val(XA, mem_value)
             elif instr == Instr.STUR:
                 reg_val = self.registers[XA]
                 self.set_double_word(mem_index, reg_val)
@@ -446,11 +480,17 @@ class CPU:
             # Enforcing IMM bounds
             if not (0 <= IMM <= 4095):
                 error_msg = f'''
-                Immediete Value invalid. 
+                Immediate Value invalid. 
                 Recieved IMM = {IMM}.
                 Expected 0 <= IMM <= 4095.
                 '''
-                raise ValueError(error_msg)
+                if self.debug:
+                    print(error_msg)
+                    print("Skipping instruction.")
+                    self.pc += 4
+                    return
+                else:
+                    raise ValueError(error_msg)
 
             if instr == Instr.ADDI:
                 # Compute value to be put in XA
@@ -486,11 +526,17 @@ class CPU:
             # Enforcing IMM bounds
             if not (-33554432 <= IMM <= 33554431):
                 error_msg = f'''
-                Immediete Value invalid. 
+                Immediate Value invalid. 
                 Recieved IMM = {IMM}.
                 Expected -33 554 432 <= IMM <= 33 554 431.
                 '''
-                raise ValueError(error_msg)
+                if self.debug:
+                    print(error_msg)
+                    print("Skipping instruction.")
+                    self.pc += 4
+                    return
+                else:
+                    raise ValueError(error_msg)
 
             # Set new PC value
             self.pc += 4 * IMM
@@ -512,17 +558,33 @@ class CPU:
             # Enforcing IMM bounds
             if not (-262144 <= IMM <= 262143):
                 error_msg = f'''
-                Immediete Value invalid. 
+                Immediate Value invalid. 
                 Recieved IMM = {IMM}.
                 Expected -262 144 <= IMM <= 262 143.
                 ''' 
-                raise ValueError(error_msg)
+                if self.debug:
+                    print(error_msg)
+                    print("Skipping instruction.")
+                    self.pc += 4
+                    return
+                else:
+                    raise ValueError(error_msg)
             
             step = 1
             if instr == Instr.CBZ:
-                if self.registers[XA] == 0: step = IMM
+                if self.registers[XA] == 0:
+                    step = IMM
+                    if self.debug and self.count[self.pc // 4] > LIMIT:
+                        print(f"CB-type instruction executed more than {LIMIT} times.")
+                        print("Forcing branch not taken: " + self.get_cur_instr())
+                        step = 1
             elif instr == Instr.CBNZ:
-                if self.registers[XA] != 0: step = IMM
+                if self.registers[XA] != 0:
+                    step = IMM
+                    if self.debug and self.count[self.pc // 4] > LIMIT:
+                        print(f"CB-type instruction executed more than {LIMIT} times.")
+                        print("Forcing branch not taken: " + self.get_cur_instr())
+                        step = 1
             else:
                 error_msg = f'''
                 Unknown CB-type instruction. Recieved '{instr}'
