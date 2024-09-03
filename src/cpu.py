@@ -6,7 +6,7 @@ from instr import Instr
 from validator import ValidateARM
 
 # number of bytes in data memory
-MEMSIZE = 256
+MEMSIZE = 512
 
 # maximum number of times a CB-type instruction can be executed
 LIMIT = 1000
@@ -27,7 +27,10 @@ class CPU:
         self.pc = 0
 
         self.code = code
-        self.debug = debug
+        # when debug is true, invalid lines may be ignored and loops may be interrupted
+        self.debug = debug 
+        # whether a line of code has been ignored or not
+        self.ignored = False
 
         self.registers = [0] * 32
         self.data_mem = [0] * MEMSIZE
@@ -273,6 +276,7 @@ class CPU:
             '''
             if self.debug:
                 print(error_msg)
+                self.ignored = True
                 return False
             else:
                 raise ValueError(error_msg)
@@ -286,6 +290,7 @@ class CPU:
             '''
             if self.debug:
                 print(error_msg)
+                self.ignored = True
                 return False
             else:
                 raise ValueError(error_msg)
@@ -425,6 +430,7 @@ class CPU:
                     print(error_msg)
                     print("Skipping instruction.")
                     self.pc += 4
+                    self.ignored = True
                     return
                 else:
                     raise ValueError(error_msg)
@@ -442,6 +448,7 @@ class CPU:
                     print(error_msg)
                     print("Skipping instruction.")
                     self.pc += 4
+                    self.ignored = True
                     return
                 else:
                     raise ValueError(error_msg)
@@ -488,6 +495,7 @@ class CPU:
                     print(error_msg)
                     print("Skipping instruction.")
                     self.pc += 4
+                    self.ignored = True
                     return
                 else:
                     raise ValueError(error_msg)
@@ -534,6 +542,7 @@ class CPU:
                     print(error_msg)
                     print("Skipping instruction.")
                     self.pc += 4
+                    self.ignored = True
                     return
                 else:
                     raise ValueError(error_msg)
@@ -566,6 +575,7 @@ class CPU:
                     print(error_msg)
                     print("Skipping instruction.")
                     self.pc += 4
+                    self.ignored = True
                     return
                 else:
                     raise ValueError(error_msg)
@@ -578,6 +588,7 @@ class CPU:
                         print(f"CB-type instruction executed more than {LIMIT} times.")
                         print("Forcing branch not taken: " + self.get_cur_instr())
                         step = 1
+                        self.ignored = True
             elif instr == Instr.CBNZ:
                 if self.registers[XA] != 0:
                     step = IMM
@@ -585,6 +596,7 @@ class CPU:
                         print(f"CB-type instruction executed more than {LIMIT} times.")
                         print("Forcing branch not taken: " + self.get_cur_instr())
                         step = 1
+                        self.ignored = True
             else:
                 error_msg = f'''
                 Unknown CB-type instruction. Recieved '{instr}'

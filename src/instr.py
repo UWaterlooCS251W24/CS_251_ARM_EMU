@@ -45,9 +45,11 @@ class Instr:
         instr = instr_str.split()[0]
         args = instr_str[len(instr):]
 
-        if instr_str.find(',') != -1:
-            print("Error: No commas allowed in instruction: " + orig)
-            args = args.replace(',', ' ')
+        args = args.replace(',', ' ')
+
+        # if instr_str.find(',') != -1:
+        #     print("Error: No commas allowed in instruction: " + orig)
+        #     args = args.replace(',', ' ')
 
         args = args.replace('[', ' ')
         args = args.replace(']', ' ')
