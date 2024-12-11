@@ -589,6 +589,12 @@ class CPU:
                         print("Forcing branch not taken: " + self.get_cur_instr())
                         step = 1
                         self.ignored = True
+                    elif self.count[self.pc // 4] > LIMIT:
+                        error_msg = f'''
+                        CB-type instruction executed more than {LIMIT} times. 
+                        Is there an infinite loop?
+                        '''
+                        raise ValueError(error_msg)
             elif instr == Instr.CBNZ:
                 if self.registers[XA] != 0:
                     step = IMM
@@ -597,6 +603,12 @@ class CPU:
                         print("Forcing branch not taken: " + self.get_cur_instr())
                         step = 1
                         self.ignored = True
+                    elif self.count[self.pc // 4] > LIMIT:
+                        error_msg = f'''
+                        CB-type instruction executed more than {LIMIT} times. 
+                        Is there an infinite loop?
+                        '''
+                        raise ValueError(error_msg)
             else:
                 error_msg = f'''
                 Unknown CB-type instruction. Recieved '{instr}'
